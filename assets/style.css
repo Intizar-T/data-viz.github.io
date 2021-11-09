@@ -1,0 +1,91 @@
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@100;300;400;500;700;900&display=swap');
+
+#body{
+    background-image: url(https://drive.google.com/uc?export=view&id=1iICz9A_h2S8OGvqi_-P-1P6wbvjdDgyF);
+    background-size: 100vh 100vh;
+    min-height: 100vh;
+    min-width: 100vh;
+}
+
+#signup{
+    position: absolute;
+    right: 10px;
+}
+
+#signin{
+    position: absolute;
+    right: 10px;
+}
+
+a{
+    color: black;
+}
+
+a:hover{
+    color: orange;
+}
+
+#menu{
+    background-color: rgb(119, 119, 224);
+    font-size: large;
+    min-height: 40px;
+    padding-top: 10px;
+}
+
+#account{
+    margin: auto;
+    width: 50%;
+    width: fit-content;
+}
+
+#userid{
+    margin-bottom: 10px;
+    background-color: grey;
+    color: white;
+}
+
+#username{
+    margin-bottom: 10px;
+    background-color: grey;
+    color: white;
+}
+
+#useremail{
+    margin-bottom: 10px;
+    background-color: grey;
+    color: white;
+}
+
+#userpass{
+    background-color: grey;
+    color: white;
+}
+
+::placeholder{
+    color: white;
+}
+
+#signin_button{
+    margin-top: 10px;
+}
+
+#signup_button{
+    margin-top: 10px;
+}
+
+.mainmenu{
+    background-color: rgb(119, 119, 224);
+    font-size: large;
+    min-height: 40px;
+    padding-top: 10px;
+}
+
+div.mainmenu a{
+    margin-left: 30px;
+    text-align: center;
+    display: inline-block;
+}
+
+#myaccount{
+
+}

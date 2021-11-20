@@ -13,7 +13,7 @@ app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTST
 
 x = preprocess()
 users = x.users()
-#skin_gsr, gsr_hrv, phy = x.wrapper_function('P0720')
+#skin_gsr, gsr_hrv, phy, acc = x.wrapper_function('P0720')
 
 url_bar_and_content_div = html.Div([
     dcc.Location(id='url', refresh=False),

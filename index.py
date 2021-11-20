@@ -77,11 +77,17 @@ main_layout = html.Div([
         className='mainmenu'),
     html.Div(['Main Page']),
     html.Br(),
-    html.A('Sing In', href='/signin'),
+    html.A('Sign In', href='/signin'),
     html.Br(),
-    html.A('Sing Up', href='/signup'),
+    html.A('Sign Up', href='/signup'),
     html.Br(),
-    html.A('Junyup Charts', href='/junyupcharts'),
+    html.A('Chart 1', href='/chart1'),
+    html.Br(),
+    html.A('Chart 2', href='/chart2'),
+    html.Br(),
+    html.A('Chart 3', href='/chart3'),
+    html.Br(),
+    html.A('Chart 4', href='/chart4')
 ], id='main_layout')
 
 
@@ -149,7 +155,66 @@ figure2.add_hrect(y0=0.4, y1=threshold4,
                   annotation_text="Severe Stress", annotation_position="top right",
                   fillcolor="red", opacity=0.3, line_width=0)
 
-junyup_charts_layout = html.Div(children=[
+chart3Source=pd.DataFrame({
+    'Timestamp':[pd.Timestamp(2021, 11, 10, 0), pd.Timestamp(2021, 11, 10, 1), pd.Timestamp(2021, 11, 10, 2),
+                 pd.Timestamp(2021, 11, 10, 3), pd.Timestamp(2021, 11, 10, 4), pd.Timestamp(2021, 11, 10, 5),
+                 pd.Timestamp(2021, 11, 10, 6), pd.Timestamp(2021, 11, 10, 7), pd.Timestamp(2021, 11, 10, 8), 
+                 pd.Timestamp(2021, 11, 10, 9), pd.Timestamp(2021, 11, 10, 10), pd.Timestamp(2021, 11, 10, 11)],
+    'HRV':[0.962336,0.66368,1.128256,0.547536,0.929152,1.012112,1.16144,0.779824,0.613904,0.58072,0.895968,0.91256]
+})
+
+figure3=go.Figure()
+figure3.add_trace(go.Scatter(x=chart3Source['Timestamp'], y=chart3Source['HRV'], mode='lines+markers'))
+
+#Use the threshold value found in chart2
+#Except max and min values
+threshold31=chart3Source['HRV'].max()
+threshold35=chart3Source['HRV'].min()
+figure3.add_hrect(y0=threshold2, y1=threshold31,
+                  annotation_text="Unhealthy HRV range", annotation_position="top right",
+                  fillcolor="red", opacity=0.3, line_width=0)
+
+figure3.add_hrect(y0=threshold4, y1=threshold2,
+                  annotation_text="Healthy HRV range", annotation_position="top right",
+                  fillcolor="blue", opacity=0.1, line_width=0)
+
+figure3.add_hrect(y0=threshold35, y1=threshold4,
+                  annotation_text="Unhealthy HRV range", annotation_position="top right",
+                  fillcolor="red", opacity=0.3, line_width=0)
+
+
+#Activity score is calculated
+#STILL = 0
+#ON_FOOT = 0.1
+#WALKING = 0.5
+#RUNNING = 0.8
+#ON_BICYCLE = 0.8
+#TILTING, IN_VEHICLE, UNKNOWN = not calculated
+chart4Source=pd.DataFrame({
+  'HRV':[0.962336,0.66368,1.128256,0.547536,0.929152,1.012112,1.16144,0.779824,0.613904,0.58072,0.895968,0.91256],
+  'Activity_Score':[0.8, 0.1, 0.5, np.NaN, 0.5, 0.8, 0.8, 0, 0.1, 0.8, 0.8, 0.8]
+})
+
+figure4=px.scatter(chart4Source, x='Activity_Score', y='HRV', trendline="ols", trendline_scope="overall",
+                   title="Activity Score vs HRV")
+threshold41=chart4Source['HRV'].max()
+threshold45=chart4Source['HRV'].min()
+
+figure4.add_hrect(y0=threshold3, y1=1.25,
+                  annotation_text="Healthy Stress Level", annotation_position="top right",
+                  fillcolor="blue", opacity=0.3, line_width=0)
+
+figure4.add_hrect(y0=0.5, y1=threshold3,
+                  annotation_text="Unhealthy Stress Level", annotation_position="top right",
+                  fillcolor="red", opacity=0.1, line_width=0)
+
+
+
+
+
+
+
+chart1Layout = html.Div(children=[
     html.Div(children=['chart 1 - GSR vs HRV']),
     dcc.Graph(
         id='chart1',
@@ -160,13 +225,41 @@ junyup_charts_layout = html.Div(children=[
         #    }]
         #}
         figure=figure1
-    ),
+    )
+])
+chart2Layout=html.Div(children=[
     html.Div(children=['chart 2 - time vs HRV']),
     dcc.Graph(
         id='chart2',
         figure=figure2
     )
 ])
+chart3Layout=html.Div(children=[
+    html.Div(children=['chart 3 - time vs HRV : My Stress level']),
+    dcc.Graph(
+        id='chart3',
+        figure=figure3
+    )
+])
+chart4Layout = html.Div(children=[
+    html.Div(children='chart 4 - Physical Activity vs HRV'),
+    html.Div(children=['We calculated Physical Activity Score to quantize the activity value and deal with numbers']),
+    html.Br(),
+    html.Div(children=['STILL = 0']),
+    html.Div(children=['ON_FOOT = 0.1']),
+    html.Div(children=['WALKING = 0.5']),
+    html.Div(children=['RUNNING = 0.8']),
+    html.Div(children=['ON_BICYCLE = 0.8']),
+    html.Div(children=['TILTING, IN_VEHICLE, UNKNOWN = not calculated']),
+    dcc.Graph(
+        id='chart4',
+        figure=figure4
+    ),
+    html.Div(children=['We can see that enough physical activity increases HRV.']),
+    html.Div(children=['And Increasing HRV means that you are not stressed!'])
+])
+
+
 
 
 # Update the index
@@ -179,8 +272,14 @@ def display_page(pathname):
         return signin_layout
     elif pathname == '/':
         return main_layout
-    elif pathname == '/junyupcharts':
-        return junyup_charts_layout
+    elif pathname == '/chart1':
+        return chart1Layout
+    elif pathname == '/chart2':
+        return chart2Layout
+    elif pathname == '/chart3':
+        return chart3Layout
+    elif pathname == '/chart4':
+        return chart4Layout
     else:
         return 'wrong pathname'
     # You could also return a 404 "URL not found" page here

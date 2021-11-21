@@ -6,17 +6,20 @@
 ##### ---------------------------- File structure ---------------------------- #####
 # project_folder
 #   |
-#    code_folder
+#   |--code_folder
 #   |   |
-#   |    process.py
-#   |    app.py
-#    data_folder
+#   |   |--process.py
+#   |   |--app.py
+#   |  
+#   |--data_folder
 #       |
-#        user_info.csv
-#        P0701.zip
-#        P0702.zip
+#       |--user_info.csv
+#       |--P0701.zip
+#       |--P0702.zip
+#       |
 ##### --------------------------------------------------------------------- #####
 
+from numpy.lib.utils import deprecate_with_doc
 import pandas as pd
 import numpy as np
 import zipfile, os, re
@@ -28,7 +31,15 @@ class preprocess():
     def __init__(self):
         self.project_path = pathlib.Path.cwd().parent
         self.data_list = os.listdir(os.path.join(self.project_path, 'data'))[2:-2]
-        self.our_attributes = ['Gsr', 'PhysicalActivityEventEntity', 'RRInterval', 'SkinTemperature']
+        ## Make sure this is written in alphabetic order
+        ## Pick any attribute with its features
+        self.our_attributes = {
+            'Accelerometer': ['X', 'Y', 'Z'],
+            'Gsr': ['Resistance'],
+            'PhysicalActivityEventEntity': ['confidence'],
+            'RRInterval': ['Interval'],
+            'SkinTemperature': ['Temperature']
+        }
     
     ## ------ This function provides a list of all available users ------ ##
     def users(self):
@@ -68,7 +79,7 @@ class preprocess():
             all_data_attributes = [x.split("-")[0] for x in all_data]
             
             for index, attr in enumerate(all_data_attributes):
-                if attr in self.our_attributes:
+                if attr in list(self.our_attributes.keys()):
                     source = zip_file.open(all_data[index])
                     frames.append(pd.read_csv(source))
                     attributes.append(attr)
@@ -126,48 +137,27 @@ class preprocess():
         return anomalies_arr
 
     
-    ## ------ This function filters outlier data attr becomes "Resistance" for Gsr, "Interval" for RRInterval, "Temperature" for Skin Temp. and "confidence" for Physical Activ.
-    def filter_outlier(self, df, data, range, SD=True):
+    ## ------ This function filters outliers data attr becomes "Resistance" for Gsr, "Interval" for RRInterval ...
+    def filter_outlier(self, df, col_names, range, SD=True):
         # Change timestamp to ms and use it as index
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
         df.set_index('timestamp', drop=True, inplace=True)
         
-        # Detect outliers and remove them
         if SD == True:
-            df['outlier'] = self.find_anomalies_SD(data, range)
+            for col in col_names:
+                df['outlier ' + col] = self.find_anomalies_SD(df[col], range)
         else:
-            df['outlier'] = self.find_anomalies_IQ(data, range)
+            for col in col_names:
+                df['outlier ' + col] = self.find_anomalies_IQ(df[col], range)
         
-        df.drop(df[df['outlier'] == True].index, inplace=True)
-        df.drop(['outlier'], axis = 1, inplace = True) 
+        # Detect outliers and remove them
+        for col in col_names:
+            df = df[df['outlier ' + col] == False]
+        
+        df = df.drop(['outlier ' + name for name in col_names], axis = 1)
         
         return df
 
-    
-    ## ------ cleanse the data and merge dataframes of each attribute ------ ##
-    def clean_merge_data(self, df_list, attr_list):
-        count_attr = [attr_list.count(attr) for attr in self.our_attributes]
-        indices = [sum(count_attr[:x]) for x in range(1, len(count_attr))]
-        
-        ## clean and create dataframe for each attribute --> to be stacked horizontally 
-        df_list1 = [self.filter_outlier(df_x, df_x['Resistance'], range=3, SD=True) for df_x in df_list[:indices[0]]]
-        #df_list1 = [df_x for df_x in df_list[:indices[0]]]
-        df1 = pd.concat(df_list1)                   ## Merge all Gsr csv 
-        
-        df_list2 = [self.filter_outlier(df_x, df_x['confidence'], range=3, SD=True) for df_x in df_list[indices[0]:indices[1]]]
-        #df_list2 = [df_x for df_x in df_list[indices[0]:indices[1]]]
-        df2 = pd.concat(df_list2)                   ## Merge all PhysicalActivityTransitionEntity csv
-        
-        df_list3 = [self.filter_outlier(df_x, df_x['Interval'], range=3, SD=True) for df_x in df_list[indices[1]:indices[2]]]
-        #df_list3 = [df_x for df_x in df_list[indices[1]:indices[2]]]
-        df3 = pd.concat(df_list3)                   ## Merge all RRInterval csv
-        
-        df_list4 = [self.filter_outlier(df_x, df_x['Temperature'], range=3, SD=True) for df_x in df_list[indices[2]:]]
-        #df_list4 = [df_x for df_x in df_list[indices[2]:]] 
-        df4 = pd.concat(df_list4)                   ## Merge all SkinTemperature csv 
-
-        return df1, df2, df3, df4
-    
 
     ## ------ This function resamples the data ------ ##
     def timestamp_categorise(self, df, interval="300L", method="first"):
@@ -189,24 +179,37 @@ class preprocess():
         
         return df
 
+    
+    ## ------ cleanse the data and merge dataframes of each attribute ------ ##
+    def clean_merge_data(self, df_list, attr_list):
+        count_attr = [attr_list.count(attr) for attr in list(self.our_attributes.keys())]
+        indices = [sum(count_attr[:x]) for x in range(0, len(count_attr) + 1)]
+        attr_df = {}
+        i = 0
+
+        for key, value in self.our_attributes.items():
+            df_list_attr = [self.filter_outlier(df_x, value, range=3, SD=True) for df_x in df_list[indices[i]:indices[i+1]]]
+            df_attr = pd.concat(df_list_attr)
+            attr_df[key] = self.timestamp_categorise(df_attr)
+            i += 1
+        
+        return attr_df
+    
 
     ## ------ A container function ------ ##
     def wrapper_function(self, user_UID):
         list_of_users_UID = self.users()
         if user_UID not in list_of_users_UID:
-            print("Non-existing user!")
-            return pd.DataFrame(), pd.DataFrame(), pd.DataFrame()
+            return "Not a Proper UID"
 
         dataframe_list, attribute_list = self.extract_user_data(user_UID)
-        df_gsr, df_phy, df_hrv, df_skin = self.clean_merge_data(dataframe_list, attribute_list)
+        dict_attr_df = self.clean_merge_data(dataframe_list, attribute_list)            # A dictionary of all the attributes we chose and their dataframe
         
-        df_gsr, df_phy, df_hrv, df_skin = self.timestamp_categorise(df_gsr), self.timestamp_categorise(df_phy), self.timestamp_categorise(df_hrv), self.timestamp_categorise(df_skin) 
-        df_gsr, df_phy, df_hrv, df_skin = self.remove_nan(df_gsr), self.remove_nan(df_phy), self.remove_nan(df_hrv), self.remove_nan(df_skin)
 
-        aggregate_skin_gsr = pd.concat([df_skin, df_gsr], axis=1, sort=False)
+        aggregate_skin_gsr = pd.concat([dict_attr_df['SkinTemperature'], dict_attr_df['Gsr']], axis=1, sort=False)
         aggregate_skin_gsr = self.remove_nan(aggregate_skin_gsr)
 
-        aggregate_gsr_hrv = pd.concat([df_gsr, df_hrv], axis=1, sort=False)
+        aggregate_gsr_hrv = pd.concat([dict_attr_df['Gsr'], dict_attr_df['RRInterval']], axis=1, sort=False)
         aggregate_gsr_hrv = self.remove_nan(aggregate_gsr_hrv)
 
-        return aggregate_skin_gsr, aggregate_gsr_hrv, df_phy
+        return aggregate_skin_gsr, aggregate_gsr_hrv, dict_attr_df['PhysicalActivityEventEntity'], dict_attr_df['Accelerometer']

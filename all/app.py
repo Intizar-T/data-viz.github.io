@@ -524,7 +524,7 @@ def insert_graphs(value):
     if value is None:
         raise PreventUpdate
     else:
-        skin_gsr_hrv, phy, level = x.wrapper_function(value, cleaned=True)        
+        skin_gsr_hrv, phy, level = x.wrapper_function(value, cleaned=True, preprocessed=True)        
         return gsr_hrv_time(skin_gsr_hrv, level), physical_activity_graph(phy)
 
 

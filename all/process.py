@@ -12,11 +12,22 @@
 #   |   |--app.py
 #   |  
 #   |--data_folder
+#   |   |
+#   |   |--user_info.csv
+#   |   |--P0701.zip
+#   |   |--P0702.zip
+#   |--PreprocessedData
+#   |   |
+#   |   |--skin gsr hrv
+#       |   |
+#       |   |-- PreprocessedP0701.csv
+#       |   |-- PreprocessedP0702.csv
 #       |
-#       |--user_info.csv
-#       |--P0701.zip
-#       |--P0702.zip
-#       |
+#       |--physical activity
+#           |
+#           |-- PreprocessedP0701.csv
+#           |-- PreprocessedP0702.csv
+#
 ##### --------------------------------------------------------------------- #####
 
 from numpy.lib.utils import deprecate_with_doc
@@ -34,7 +45,7 @@ class preprocess():
         ## Make sure this is written in alphabetic order
         ## Pick any attribute with its features
         self.our_attributes = {
-            'Accelerometer': ['X', 'Y', 'Z'],
+            #'Accelerometer': ['X', 'Y', 'Z'],
             'Gsr': ['Resistance'],
             'PhysicalActivityEventEntity': ['confidence'],
             'RRInterval': ['Interval'],
@@ -57,7 +68,11 @@ class preprocess():
             csv_reader = csv.reader(csv_file)
             next(csv_reader)
             for row in csv_reader:
-                UID = 'P' + row[0]
+                if (700 <= int(row[0]) < 800):
+                    UID = 'P0' + row[0]
+                else:
+                    UID = 'P' + row[0]
+
                 if user_UID == UID:
                     infos['Openness'] = row[1]
                     infos['Conscientiousness'] = row[2]
@@ -66,6 +81,7 @@ class preprocess():
                     infos['Agreeableness'] = row[5]
                     infos['Age'] = row[6]
                     infos['Gender'] = row[7]
+                    break
         return infos
     
     ## ----- This function specifically preprocesses a selected users data ------ ##
@@ -138,23 +154,24 @@ class preprocess():
 
     
     ## ------ This function filters outliers data attr becomes "Resistance" for Gsr, "Interval" for RRInterval ...
-    def filter_outlier(self, df, col_names, range, SD=True):
+    def filter_outlier(self, df, col_names, range, cleaned, SD=True):
         # Change timestamp to ms and use it as index
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
         df.set_index('timestamp', drop=True, inplace=True)
-        
-        if SD == True:
+
+        if cleaned:
+            if SD:
+                for col in col_names:
+                    df['outlier ' + col] = self.find_anomalies_SD(df[col], range)
+            else:
+                for col in col_names:
+                    df['outlier ' + col] = self.find_anomalies_IQ(df[col], range)
+            
+            # Detect outliers and remove them
             for col in col_names:
-                df['outlier ' + col] = self.find_anomalies_SD(df[col], range)
-        else:
-            for col in col_names:
-                df['outlier ' + col] = self.find_anomalies_IQ(df[col], range)
-        
-        # Detect outliers and remove them
-        for col in col_names:
-            df = df[df['outlier ' + col] == False]
-        
-        df = df.drop(['outlier ' + name for name in col_names], axis = 1)
+                df = df[df['outlier ' + col] == False]
+            
+            df = df.drop(['outlier ' + name for name in col_names], axis = 1)
         
         return df
 
@@ -179,16 +196,37 @@ class preprocess():
         
         return df
 
+    ## ------ This function labels the range ------ ##
+    def label_range(self, df, attr):
+        min_val = df[attr].min()
+        max_val = df[attr].max()
+        label=[]
+        for x in df[attr]:
+            if x >= 0 and x<= 0.8 * max_val:
+                label.append("Good")
+            elif x > 0.8 * max_val:
+                label.append("Very Good")
+            elif x<=0 and x>= 0.8 * min_val:
+                label.append("Poor")
+            else:
+                label.append("Very Poor")
+        return label
+
+    ## ------ This function is used to calculate the percentage of poor points ------ ##
+    def percentage_poor(self, df):
+        temp_df = df.groupby('label').count().sort_index()
+        return temp_df
     
+
     ## ------ cleanse the data and merge dataframes of each attribute ------ ##
-    def clean_merge_data(self, df_list, attr_list):
+    def clean_merge_data(self, df_list, attr_list, cleaned):
         count_attr = [attr_list.count(attr) for attr in list(self.our_attributes.keys())]
         indices = [sum(count_attr[:x]) for x in range(0, len(count_attr) + 1)]
         attr_df = {}
         i = 0
 
         for key, value in self.our_attributes.items():
-            df_list_attr = [self.filter_outlier(df_x, value, range=3, SD=True) for df_x in df_list[indices[i]:indices[i+1]]]
+            df_list_attr = [self.filter_outlier(df_x, value, range=3, cleaned=cleaned, SD=True) for df_x in df_list[indices[i]:indices[i+1]]]
             df_attr = pd.concat(df_list_attr)
             attr_df[key] = self.timestamp_categorise(df_attr)
             i += 1
@@ -197,19 +235,31 @@ class preprocess():
     
 
     ## ------ A container function ------ ##
-    def wrapper_function(self, user_UID):
+    def wrapper_function(self, user_UID, cleaned=True, preprocessed=True):
         list_of_users_UID = self.users()
         if user_UID not in list_of_users_UID:
-            return "Not a Proper UID"
+            print("Not a Proper UID")
+            return [pd.DataFrame() for x in range(3)]
 
-        dataframe_list, attribute_list = self.extract_user_data(user_UID)
-        dict_attr_df = self.clean_merge_data(dataframe_list, attribute_list)            # A dictionary of all the attributes we chose and their dataframe
+        if preprocessed == True:
+            aggregate_skin_gsr_hrv = pd.read_csv(os.path.join(self.project_path, 'PreprocessedData', 'skin gsr hrv', "Preprocessed" + user_UID))
+            physical_activity = pd.read_csv(os.path.join(self.project_path, 'PreprocessedData', 'physical activity', "Preprocessed" + user_UID))
+
+        else:  
+            dataframe_list, attribute_list = self.extract_user_data(user_UID)
+            dict_attr_df = self.clean_merge_data(dataframe_list, attribute_list, cleaned)            # A dictionary of all the attributes we chose and their dataframe
+            
+            physical_activity = dict_attr_df['PhysicalActivityEventEntity']
+            
+            aggregate_skin_gsr = pd.concat([dict_attr_df['SkinTemperature'], dict_attr_df['Gsr']], axis=1, sort=False)
+            aggregate_skin_gsr = self.remove_nan(aggregate_skin_gsr)
+            aggregate_skin_gsr['Gsr_calculated'] = (-1) * 38.3279 * aggregate_skin_gsr['Temperature'] + 2769.4713
+            aggregate_skin_gsr['Gsr_difference'] = aggregate_skin_gsr['Gsr_calculated'] - aggregate_skin_gsr['Resistance']
+
+            aggregate_skin_gsr_hrv = pd.concat([aggregate_skin_gsr, dict_attr_df['RRInterval']], axis=1, sort=False)
+            aggregate_skin_gsr_hrv = self.remove_nan(aggregate_skin_gsr_hrv)
         
-
-        aggregate_skin_gsr = pd.concat([dict_attr_df['SkinTemperature'], dict_attr_df['Gsr']], axis=1, sort=False)
-        aggregate_skin_gsr = self.remove_nan(aggregate_skin_gsr)
-
-        aggregate_gsr_hrv = pd.concat([dict_attr_df['Gsr'], dict_attr_df['RRInterval']], axis=1, sort=False)
-        aggregate_gsr_hrv = self.remove_nan(aggregate_gsr_hrv)
-
-        return aggregate_skin_gsr, aggregate_gsr_hrv, dict_attr_df['PhysicalActivityEventEntity'], dict_attr_df['Accelerometer']
+        aggregate_skin_gsr_hrv['label'] = self.label_range(aggregate_skin_gsr_hrv, 'Gsr_difference')
+        percent_poor_df = self.percentage_poor(aggregate_skin_gsr_hrv)
+        
+        return aggregate_skin_gsr_hrv, physical_activity, percent_poor_df

@@ -1,9 +1,12 @@
 import dash
+import pandas as pd
+import numpy as np
 import plotly.express as px
 import plotly.graph_objects as go
-from process import preprocess
-from flask import Flask, render_template
+import networkx as nx
 import dash_bootstrap_components as dbc
+from process import preprocess
+from flask import Flask
 from dash import dcc, html
 from dash.dependencies import Output, Input, State
 from dash.exceptions import PreventUpdate
@@ -12,369 +15,518 @@ server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP, dbc.icons.FONT_AWESOME])
 
 x = preprocess()
-users = x.users()
-#skin_gsr, gsr_hrv, phy, acc = x.wrapper_function('P0720')
-
-url_bar_and_content_div = html.Div([
-    dcc.Location(id='url', refresh=False),
-    html.Div(id='page-content')
-])
 
 
-
-nav = html.Div(
-    [
-        html.Ul(
-            [
-                html.Li(dcc.Link("<UID>", href="/", className="navbar-link lead fw-bold d-flex align-items-center py-0 px-4 ms-3 mb-1 mb-md-4", style={"textDecoration": "none", "color": "black"}), className="nav-item"),
-                html.Li(dcc.Link("Health", href="/health", className="nav-link lead fw-normal d-flex align-items-center py-0 px-4 ms-3 mb-1 mb-md-4", style={"color": "black"}), className="nav-item"),     
-                html.Li(dcc.Link("Stress", href="/stress", className="nav-link lead fw-normal d-flex align-items-center py-0 px-4 ms-3 mb-1 mb-md-4", style={"color": "black"}), className="nav-item"),    
-                html.Li(dcc.Link("Result", href="/result", className="nav-link lead fw-normal d-flex align-items-center py-0 px-4 ms-3 mb-1 mb-md-4", style={"color": "black"}), className="nav-item")
-            ],
-            className="navbar-nav flex-row flex-wrap"
-        ),
-        html.Ul(
-            [
-                #html.Li(dcc.Link(html.I(className="fas fa-user-circle"), href="/profile", className="nav-link d-flex align-items-center py-0 px-4 ms-3 mb-1 mb-md-4", style={"color": "black"}), className="nav-item"),
-                html.Li(dbc.Button(dcc.Link("Exit", href="/signin", className="fw-normal", style={"textDecoration": "none", "color": "black"}), outline=True, color="light", className="me-1 mb-2 btn-sm"), className="nav-item")
-            ],
-            className="navbar-nav flex-row flex-wrap ms-auto"
-        )   
-    ],
-    className="nav fixed-top navbar-expand-md navbar-dark pt-4 pl-4 pe-4 pb-0 mx-auto",
-    style={"backgroundColor": "#658B97", "fontWeight": "600", "fontSize": "15px"}
+app.layout = html.Div(
+        [
+            html.Div(
+                dcc.Dropdown(id='my-dropdown', options=[{'label': user, 'value': user} for user in x.users()], placeholder="UID"),
+                style={"marginTop":"15px", "marginLeft": "43%", "width":"15%", "maxHeight":"20px"}
+            ),
+            html.Div(id="user-infos", children=[]),
+            html.Br(),
+            html.Div(id="gsr-hrv-time", children=[]),
+            html.Br(),          
+            html.Div(id="phy-activity", children=[])
+        ]
 )
+ 
+
+def body_infos_2(value, infos):
+    infos_1 = infos.copy()
+    del infos_1["Gender"], infos_1["Age"]
+
+    fig = px.bar(x=list(infos_1.keys()), y=list(infos_1.values()))
+    return html.Div(
+            [
+                html.Div(
+                    html.H3(f"{value}"),
+                    className="lead d-flex justify-content-center text-center"
+                ),
+
+                html.Div(
+                    html.Div(
+                        html.H6("Mental Health Spectrum"),
+                        className="lead d-flex justify-content-center text-center"
+                    ),
+
+                    html.Div(
+                        dcc.Graph(figure=fig),
+                        className=""
+                    )
+                )
+
+            ]
+        )
 
 
-
-footer = html.Footer(
-    html.Div(
+def body_infos_1(value, infos):
+    return html.Div(
         [
             dbc.Row(
                 [
-                    dbc.Col(
-                        [
-                            html.P("Contact Us", className="lead")
-                        ],
-                        className="col-md-3"
-                    ),
-                    dbc.Col(
-                        [
-                            html.P("About", className="lead")
-                        ],
-                        className="col-md-5"
-                    ),
-                    dbc.Col(
-                        [
-                            html.P("Members", className="lead"),
-                            html.Br(),
-                            html.Br(),
-                            dbc.Row([
-                                dbc.Col(html.P("/"), className="col-md-4 mt-2"),
-                                dbc.Col(dcc.Link(html.I(className="bi bi-github"), href="/", target="_blanket", style={"fontSize": "25px", "padding": "10px", "width": "80px", "height": "80px", "borderRadius": "50%", "color": "#f2f2f2"}), className="col-md-3"),
-                                dbc.Col(dcc.Link(html.I(className="bi bi-linkedin"), href="/", target="_blanket", style={"fontSize": "25px", "padding": "10px", "width": "80px", "height": "80px", "borderRadius": "50%", "color": "#f2f2f2"}), className="col-md-3")
-                                ]
-                            ),
-                            html.Br(),
+                    dbc.Col(html.H3(f"{value}"), className="col-2 offset-5 lead d-flex justify-content-center text-center")
+                ]
 
-                            dbc.Row([
-                                dbc.Col(html.P("/"), className="col-md-4 mt-2"),
-                                dbc.Col(dcc.Link(html.I(className="bi bi-github"), href="/", target="_blanket", style={"fontSize": "25px", "padding": "10px", "width": "80px", "height": "80px", "borderRadius": "50%", "color": "#f2f2f2"}), className="col-md-3"),
-                                dbc.Col(dcc.Link(html.I(className="bi bi-linkedin"), href="/", target="_blanket", style={"fontSize": "25px", "padding": "10px", "width": "80px", "height": "80px", "borderRadius": "50%", "color": "#f2f2f2"}), className="col-md-3")
+            ),
+            dbc.Row(
+                [
+                    dbc.Col(html.P(f"{infos['Gender']}, {infos['Age']}"), className="col-2 offset-5 small lead d-flex justify-content-center text-center")        
+                ]
+            ),
+            html.Br(),
+    
+            dbc.Row(
+                [
+                    dbc.Col(
+                        dbc.Card(
+                            dbc.CardBody(
+                                [
+                                    html.H6("Openness", className="card-title d-flex justify-content-center text-center", style={"fontWeight":"500"}),
+                                    html.Br(),
+                                    html.H6(f"{infos['Openness']}", className="card-subtitle fw-bold d-flex justify-content-center text-center"),
+                                    html.Br(),
+                                    html.P("High - Inventive/ Curious", className="lead", style={"fontSize":"13px"}),
+                                    html.P("Low - Consistent/ Cautious", className="lead", style={"fontSize":"13px"})
+                                ],
+                            ),
+                            className="bg-light"
+                        ),
+                        className="col-md-2 offset-md-1 col-sm-12"
+                    ),
+                    
+                    dbc.Col(
+                        dbc.Card(
+                            dbc.CardBody(
+                                [
+                                    html.H6("Conscientiousness", className="card-title d-flex justify-content-center text-center", style={"fontWeight":"500"}),
+                                    html.Br(),
+                                    html.H6(f"{infos['Conscientiousness']}", className="card-subtitle fw-bold d-flex justify-content-center text-center"),
+                                    html.Br(),
+                                    html.P("High - Efficient/ Organized", className="lead", style={"fontSize":"13px"}),
+                                    html.P("Low - Easy-going/ Careless", className="lead", style={"fontSize":"13px"})
                                 ]
                             ),
-                            html.Br(),
+                            className="bg-light"
+                        ),
+                        className="col-md-2 col-sm-12"
+                    ),
+                    
+                    dbc.Col(
+                        dbc.Card(
+                            dbc.CardBody(
+                                [
+                                    html.H6("Neuroticism", className="card-title d-flex justify-content-center text-center", style={"fontWeight":"500"}),
+                                    html.Br(),
+                                    html.H6(f"{infos['Neuroticism']}", className="card-subtitle fw-bold d-flex justify-content-center text-center"),
+                                    html.Br(),
+                                    html.P("High - Sensitive/ Nervous", className="lead", style={"fontSize":"13px"}),
+                                    html.P("Low - Secure/ Confident", className="lead", style={"fontSize":"13px"})
+                                ]
+                            ),
+                            className="bg-light"
+                        ),
+                        className="col-md-2 col-sm-12",
+                    ),
 
-                            dbc.Row([
-                                dbc.Col(html.P("/", className="small"), className="col-md-4 mt-2"),
-                                dbc.Col(dcc.Link(html.I(className="bi bi-github"), href="/", target="_blanket", style={"fontSize": "25px", "padding": "10px", "width": "80px", "height": "80px", "borderRadius": "50%", "color": "#f2f2f2"}), className="col-md-3"),
-                                dbc.Col(dcc.Link(html.I(className="bi bi-linkedin"), href="/", target="_blanket", style={"fontSize": "25px", "padding": "10px", "width": "80px", "height": "80px", "borderRadius": "50%", "color": "#f2f2f2"}), className="col-md-3")
+                    dbc.Col(
+                        dbc.Card(
+                            dbc.CardBody(
+                                [
+                                    html.H6("Extraversion", className="card-title d-flex justify-content-center text-center", style={"fontWeight":"500"}),
+                                    html.Br(),
+                                    html.H6(f"{infos['Extraversion']}", className="card-subtitle fw-bold d-flex justify-content-center text-center"),
+                                    html.Br(),
+                                    html.P("High - Outgoing/ Energetic", className="lead", style={"fontSize":"13px"}),
+                                    html.P("Low - Solitary/ Reserved", className="lead", style={"fontSize":"13px"})
                                 ]
                             ),
-                        ],
-                        className="col-md-3"
+                            className="bg-light"
+                        ),
+                        className="col-md-2 col-sm-12"
+                    ),
+
+                    dbc.Col(
+                        dbc.Card(
+                            dbc.CardBody(
+                                [
+                                    html.H6("Agreeableness", className="card-title d-flex justify-content-center text-center", style={"fontWeight":"500"}),
+                                    html.Br(),
+                                    html.H6(f"{infos['Agreeableness']}", className="card-subtitle fw-bold d-flex justify-content-center text-center"),
+                                    html.Br(),
+                                    html.P("High - Friendly/ Caring", className="lead", style={"fontSize":"13px"}),
+                                    html.P("Low - Unsociable/ Detached", className="lead", style={"fontSize":"13px"})
+                                ]
+                            ),
+                            className="bg-light"
+                        ),
+                        className="col-md-2 col-sm-12"
                     )
                 ]
             ),
+            html.Br(),
+            html.Br(),
 
-            dbc.Row(html.P("Copyright &copy; 2021 All rights reserved.", className="small copyright", style={"marginTop":"120px"}), className="text-center")
+            dbc.Row(
+                [
+                    dbc.Col(html.P("Mental Health Spectrum"), className="col-4 offset-4 small lead d-flex justify-content-center text-center")        
+                ]
+            ),
+
+            dbc.Row(
+                [
+                dbc.Col(
+                        html.P("Very Poor", className="lead fw-normal px-0", style={"fontSize":"15px"}),
+                        className="col-md-2 offset-md-1 d-flex justify-content-center text-center" 
+                ),
+
+                dbc.Col(
+                        html.P("Poor", className="lead fw-normal px-0", style={"fontSize":"15px"}),
+                        className="col-md-3 d-flex justify-content-center text-center" 
+                ),
+                dbc.Col(
+                        html.P("Good", className="lead fw-normal px-0", style={"fontSize":"15px"}),
+                        className="col-md-3 d-flex justify-content-center text-center" 
+                ),
+                dbc.Col(
+                        html.P("Very Good", className="lead fw-normal", style={"fontSize":"15px"}),
+                        className="col-md-2 d-flex justify-content-center text-center" 
+                )
+                ]
+            ),
+
+            dbc.Row(
+                [
+                dbc.Col(
+                        html.Div(style={"backgroundColor":"#750000", "minHeight":"20px"}),
+                        className="col-md-2 offset-md-1" 
+                ),
+                dbc.Col(
+                        html.Div(style={"backgroundColor":"#B50000", "minHeight":"20px"}),
+                        className="col-md-3" 
+                ),
+                dbc.Col(
+                        html.Div(style={"backgroundColor":"#7FB2F0", "minHeight":"20px"}),
+                        className="col-md-3" 
+                ),
+                dbc.Col(
+                        html.Div(style={"backgroundColor":"#35478C", "minHeight":"20px"}),
+                        className="col-md-2" 
+                )
+                ]
+            )
         ],
-        style={"padding": "40px", "paddingBottom": "0px", "borderTop": "1px solid #eee", "marginTop":"70px"}
-    ),
-    className="text-center",
-    style={"position":"relative", "height":"500px", "bottom":"0", "left":"0", "width":"100%", "backgroundColor": "#052E3C", "color": "#f2f2f2"}
-)
+        style={"marginTop": "40px"}
+    )
+
+def stress_level(df):
+    labels = list(df.index.values)
+    poor, very_poor = 0, 0
+    for label in labels:
+        if label == 'Poor':
+            poor = df.loc['Poor', 'Temperature']
+        elif label == 'Very Poor':
+            very_poor = df.loc['Very Poor', 'Temperature']
+    
+    total = np.sum(df.iloc[:, 1])
+    if total == 0:
+        return 0
+    else:
+        return round(((poor +  very_poor) / total) * 100, 1)
 
 
-
-
-card_hrv = dbc.Card(
-    dbc.CardBody(
-        [
-            html.H4("HRV", className="card-title display-5 fw-normal"),
-            html.Br(),
-            html.P("Who knew how important the interval between each of your heartbeats are?", className="card-subtitle lead fw-normal"),
-            html.Br(),
-            html.P(
-                "Some quick example text to build on the card title and make "
-                "up the bulk of the card's content.",
-                className="card-text",
-            ),
-            html.Br(),
-            html.P(
-                "Blue - Healthy ranges", className="fw-bold", style={"color":"blue"}
-            ),
-            html.P(
-                "Red - Unhealthy ranges", className="fw-bold", style={"color":"red"}
-            ),            
-            dbc.CardLink("Read More", href="#"),
-        ]
-    ),
-    style={"width": "18rem", "marginTop": "90px"},
-)
-
-
-
-
-card_gsr = dbc.Card(
-    dbc.CardBody(
-        [
-            html.H4("GSR", className="card-title display-5 fw-normal"),
-            html.Br(),
-            html.P("What you wear on your body can actually indicate ...", className="card-subtitle lead fw-normal"),
-            html.Br(),
-            html.P(
-                "GSR can be used as a stress indicator when analyzed carefully"
-                "Some quick example text to build on the card title and make "
-                "up the bulk of the card's content.",
-                className="card-text",
-            ),
-            html.Br(),
-            html.P(
-                "Blue - Healthy ranges", className="fw-bold", style={"color":"blue"}
-            ),
-            html.P(
-                "Red - Unhealthy ranges", className="fw-bold", style={"color":"red"}
-            ),              
-            dbc.CardLink("Read More", href="#"),
-        ]
-    ),
-    style={"width": "18rem"},
-)
-
-
-
-
-
-card_physical = html.Div(
-    [
-        html.H3("Physical Activity", className="fw-bold"),
-        html.Div(
+def gsr_hrv_time(df1, df2):
+    card_hrv = dbc.Card(
+        dbc.CardBody(
             [
+                html.H4("HRV", className="card-title display-5 fw-normal"),
                 html.Br(),
-                html.P("The ultimate solution to all our health problems!", className="lead fw-normal"),
+                html.P("Who knew how important the interval between each of your heartbeats are?", className="card-subtitle lead fw-normal"),
+                html.Br(),
+                html.P(
+                    "Some quick example text to build on the card title and make "
+                    "up the bulk of the card's content.",
+                    className="card-text",
+                ),
+                html.Br(),           
+                dbc.CardLink("Read More", href="#", style={"textDecoration": "none", "color": "inherit"}),
+            ]
+        ),
+        style={"width": "18rem"},
+    )
+
+    card_gsr = dbc.Card(
+        dbc.CardBody(
+            [
+                html.H4("GSR", className="card-title display-5 fw-normal"),
+                html.Br(),
+                html.P("What you wear on your body can actually indicate ...", className="card-subtitle lead fw-normal"),
                 html.Br(),
                 html.P(
                     "GSR can be used as a stress indicator when analyzed carefully"
                     "Some quick example text to build on the card title and make "
                     "up the bulk of the card's content.",
-                    className="",
+                    className="card-text",
                 ),
+                html.Br(),          
+                dbc.CardLink("Read More", href="#", style={"textDecoration": "none", "color": "inherit"}),
+            ]
+        ),
+        style={"width": "18rem"},
+    )
+     
+    progress_bar = html.Div(
+        [
+            dbc.Row(
+                [
+                    dbc.Col(html.P("Stress Level"), className="col-4 offset-4 small lead d-flex justify-content-center text-center")        
+                ]
+            ),
+
+            dbc.Row(
+                [
+                    dbc.Progress(label=f"{stress_level(df2)}%", value=stress_level(df2), color="danger", style={"height": "30px", "fontWeight":"600"})
+                ],
+                className="mx-auto px-0", style={"width":"80%"}
+            )
+        ]
+    )
+    gsr_hrv_graph = go.Figure()
+    gsr_hrv_graph.add_trace(
+        go.Scatter(
+            x=df1[df1['label'] == 'Very Poor']['Gsr_difference'],
+            y=df1[df1['label'] == 'Very Poor']['Interval'],
+            mode="markers",
+            name="Very Poor",
+            marker_color="#750000")
+    )
+    gsr_hrv_graph.add_trace(
+        go.Scatter(
+            x=df1[df1['label'] == 'Poor']['Gsr_difference'],
+            y=df1[df1['label'] == 'Poor']['Interval'],
+            mode="markers",
+            name="Poor",
+            marker_color="#B50000")
+    )
+    gsr_hrv_graph.add_trace(
+        go.Scatter(
+            x=df1[df1['label'] == 'Good']['Gsr_difference'],
+            y=df1[df1['label'] == 'Good']['Interval'],
+            mode="markers",
+            name="Good",
+            marker_color="#7FB2F0")
+    )
+    gsr_hrv_graph.add_trace(
+        go.Scatter(
+            x=df1[df1['label'] == 'Very Good']['Gsr_difference'],
+            y=df1[df1['label'] == 'Very Good']['Interval'],
+            mode="markers",
+            name="Very Good",
+            marker_color="#35478C")
+    )
+
+    #gsr_hrv_graph = px.scatter(df1.sort_values(by='label'), x='Gsr_difference', y='Interval', color='label', color_discrete_sequence=['#7FB2F0', '#B50000', '#35478C', '#750000'])
+    gsr_hrv_graph.update_layout(showlegend=False, template='plotly_dark')
+    gsr_hrv_graph.update_xaxes(title_text='', showticklabels=False)
+    gsr_hrv_graph.update_yaxes(title_text='Hear Rate Variability')
+
+    hrv_time_graph = go.Figure()
+    hrv_time_graph.add_trace(
+        go.Scatter(
+            x=df1.index,
+            y=df1['Interval'],
+            mode='lines+markers',
+            name='HRV',
+            line_color='rgb(0,100,80)'
+            )
+    )
+    hrv_time_graph.update_layout(
+        xaxis_title='Time',
+        yaxis_title='HRV',
+        xaxis=
+            dict(
+                rangeselector=dict(
+                    buttons=list([
+                        dict(label="sec", step="second"),
+                        dict(label="min", step="minute"),
+                        dict(label="hour", step="hour"),
+                        dict(label="day", step="day"),
+                        dict(label="all", step="all")
+                    ])
+                )
+            )
+    )
+
+    body_health = html.Div(
+        [
+            dbc.Row(
+                [
+                    dbc.Col(
+                        [
+                            card_hrv,
+                            html.Br(),
+                            html.Br(),
+                            card_gsr
+                        ],
+                        className="offset-sm-4 col-sm-8 offset-md-1 col-md-3"
+                    ),
+                    dbc.Col(
+                        [
+                            dcc.Graph(figure=gsr_hrv_graph),
+                            dcc.Graph(figure=hrv_time_graph) 
+                        ],
+                        className="offset-sm-2 col-sm-10 col-md-6"
+
+                    )
+                ]
+            ),
+        
+            progress_bar
+        ]
+    )
+
+    return body_health
+
+
+
+def physical_activity_graph(df):
+    card_physical = dbc.Card(
+        dbc.CardBody(
+            [
+                html.H4("Physical Activity", className="card-title display-5 fw-normal"),
                 html.Br(),
-            ],
-            className="bg-light"
-        )
-    ]
-)
+                html.P("What you wear on your body can actually indicate ...", className="card-subtitle lead fw-normal"),
+                html.Br(),
+                html.P(
+                    "GSR can be used as a stress indicator when analyzed carefully"
+                    "Some quick example text to build on the card title and make "
+                    "up the bulk of the card's content.",
+                    className="card-text",
+                ),
+                html.Br(),          
+                dbc.CardLink("Read More", href="#", style={"textDecoration": "none", "color": "inherit"}),
+            ]
+        ),
+        style={"width": "18rem"},
+    )
 
+    physical_graph = px.scatter(df, y='confidence', color="type")
+    physical_graph.update_layout(template='plotly_dark')
+    physical_graph.update_xaxes(title_text='')
 
-
-
-body_home = html.Div(
-    [
-        html.Div(id="user-infos", children=[], style={"marginTop":"90px"})
-    ]
-)
-
-
-
-body_health = html.Div(
-    [
+    page_footer = html.Footer(
         html.Div(
             [
-                html.Div(
+                dbc.Row(
                     [
-                        card_hrv,
-                        html.Br(),
-                        html.Br(),
-                        card_gsr
-                    ],
-                    className="col offset-sm-4 col-sm-8 offset-md-1 col-md-3"
+                        dbc.Col(
+                            [
+                                html.P("Contact Us", className="lead")
+                            ],
+                            className="col-md-3"
+                        ),
+                        dbc.Col(
+                            [
+                                html.P("About", className="lead")
+                            ],
+                            className="col-md-5"
+                        ),
+                        dbc.Col(
+                            [
+                                html.P("Members", className="lead"),
+                                html.Br(),
+                                html.Br(),
+                                dbc.Row([
+                                    dbc.Col(html.P("/"), className="col-md-4 mt-2"),
+                                    dbc.Col(dcc.Link(html.I(className="bi bi-github"), href="/", target="_blanket", style={"fontSize": "25px", "padding": "10px", "width": "80px", "height": "80px", "borderRadius": "50%", "color": "#f2f2f2"}), className="col-md-3"),
+                                    dbc.Col(dcc.Link(html.I(className="bi bi-linkedin"), href="/", target="_blanket", style={"fontSize": "25px", "padding": "10px", "width": "80px", "height": "80px", "borderRadius": "50%", "color": "#f2f2f2"}), className="col-md-3")
+                                    ]
+                                ),
+                                html.Br(),
+
+                                dbc.Row([
+                                    dbc.Col(html.P("/"), className="col-md-4 mt-2"),
+                                    dbc.Col(dcc.Link(html.I(className="bi bi-github"), href="/", target="_blanket", style={"fontSize": "25px", "padding": "10px", "width": "80px", "height": "80px", "borderRadius": "50%", "color": "#f2f2f2"}), className="col-md-3"),
+                                    dbc.Col(dcc.Link(html.I(className="bi bi-linkedin"), href="/", target="_blanket", style={"fontSize": "25px", "padding": "10px", "width": "80px", "height": "80px", "borderRadius": "50%", "color": "#f2f2f2"}), className="col-md-3")
+                                    ]
+                                ),
+                                html.Br(),
+
+                                dbc.Row([
+                                    dbc.Col(html.P("/", className="small"), className="col-md-4 mt-2"),
+                                    dbc.Col(dcc.Link(html.I(className="bi bi-github"), href="/", target="_blanket", style={"fontSize": "25px", "padding": "10px", "width": "80px", "height": "80px", "borderRadius": "50%", "color": "#f2f2f2"}), className="col-md-3"),
+                                    dbc.Col(dcc.Link(html.I(className="bi bi-linkedin"), href="/", target="_blanket", style={"fontSize": "25px", "padding": "10px", "width": "80px", "height": "80px", "borderRadius": "50%", "color": "#f2f2f2"}), className="col-md-3")
+                                    ]
+                                ),
+                            ],
+                            className="col-md-3"
+                        )
+                    ]
                 ),
-                html.Div(
-                    [
-                        dcc.Graph(id="hrv_gsr", className="row col-12"),
-                        dcc.Graph(id="hrv_gsr", className="row col-12")
-                    ],
-                    className="col offset-sm-2 col-sm-10 col-md-6"
-                )
+
+                dbc.Row(html.P("Copyright &copy; 2021 All rights reserved.", className="small copyright", style={"marginTop":"120px"}), className="text-center")
             ],
-            className="row"
-        )
-    ],
-    className="conatiner-fluid"
-)
+            style={"padding": "40px", "paddingBottom": "0px", "borderTop": "1px solid #eee", "marginTop":"70px"}
+        ),
+        className="text-center",
+        style={"position":"relative", "height":"500px", "bottom":"0", "left":"0", "width":"100%", "backgroundColor": "#052E3C", "color": "#f2f2f2"}
+    )
 
-
-
-body_stress = html.Div(
-            [
-                html.Div(
-                    [
-                        html.P("Current stress level", className="text-center lead fw-normal"),
-                        html.Div(dbc.Progress(label="73%", value=73, color="danger", style={"height": "30px"}), className="mx-auto", style={"width":"80%"})
-                    ],
-                    className="row", style={"marginTop":"90px"}
-                ),
-
-                html.Div(
-                    [
-                        html.Div([
-                            html.Div(html.Button("AM", id="am", className="me-2 btn btn-secondary px-10", n_clicks=0), className="btn-group btn-group-sm mr-1", style={"margin": "100px 5px 0px 70px", "width":"10%"}),
-                            html.Div(html.Button("PM", id="pm", className="me-2 btn btn-secondary px-10", n_clicks=0), className="btn-group btn-group-sm mr-1", style={"margin": "100px 5px 0px 20px", "width":"10%"})
-                        ]),
-                        html.Div(dcc.Graph(id="str_phy"))
-                    ],
-                    className="row offset-md-1"
-                ),
-
-                html.Div(
-                    [
-                        html.Div(dcc.Graph(id="daily_phy"), className="col offset-sm-1 col-sm-10 col-md-6"),
-                        html.Div(card_physical, className="col offset-sm-4 col-sm-8 offset-md-1 col-md-3")
-                    ],
-                    className="row"
-                )
-            ]
-)
-
-
-
-layout_page_signin = html.Div(
+    body_physical = html.Div(
         [
-            dcc.Store(id="selected-user", data=""),
-            dcc.Input(id='input-element', placeholder="UID" , type='text', list="users_ID", style={"borderRadius":"5px"}),
-            html.Span(html.I(id="button-element", n_clicks=0, className="bi bi-arrow-right-circle-fill"), className="btn mb-2"),
-            html.Datalist(id="users_ID", children=[html.Option(value=user) for user in users]),
-            html.Div(id="output-element", children=[]),
-        ],
-        style={"marginLeft": "43%", "marginTop":"18%"}
-)
+            dbc.Row(
+                [
+                    dbc.Row([
+                        html.Div(html.Button("AM", id="am", className="me-2 btn btn-secondary px-10", n_clicks=0), className="btn-group btn-group-sm mr-1", style={"margin": "100px 5px 0px 105px", "width":"15%"}),
+                        html.Div(html.Button("PM", id="pm", className="me-2 btn btn-secondary px-10", n_clicks=0), className="btn-group btn-group-sm mr-1", style={"margin": "100px 5px 0px 20px", "width":"15%"})
+                    ]),
+                    dbc.Row(
+                        dbc.Col(
+                            dcc.Graph(figure=physical_graph),
+                            className="offset-md-1"
+                        )
+                    )
+                ]
+            ),
+            html.Br(),
 
+            dbc.Row(
+                [
+                    dbc.Col(dcc.Graph(id="daily_phy"), className="col-sm-10 col-md-8"),
+                    dbc.Col(card_physical, className="col-sm-10 col-md-4")
+                ]
+            ),
+            page_footer
+        ]
+    )
 
-
-layout_page_profile = html.Div(
-    [
-        nav,
-        html.H3("User infos", style={"marginTop":"100px"}),
-        footer
-    ]
-)
-
-
-
-layout_page_health = html.Div(
-    [
-        nav,
-        body_health,
-        footer
-    ]
-)
-
-
-
-layout_page_stress = html.Div(
-    [
-        nav,
-        body_stress,
-        footer
-    ]
-)
-
-
-
-layout_page_result = html.Div(
-    [
-        nav,
-        html.H3("Results", style={"marginTop":"100px"}),
-        footer  
-    ]
-)
-
-
-
-app.layout = url_bar_and_content_div
-
-app.validation_layout = html.Div([
-    url_bar_and_content_div,
-    layout_page_profile,
-    layout_page_health,
-    layout_page_stress,
-    layout_page_result,
-    layout_page_signin
-])
-
-
-
-@app.callback(
-    Output('page-content', 'children'),
-    Input('url', 'pathname')
-)
-def display_page(pathname):
-    if pathname == "/signin":
-        return layout_page_signin        
-    elif pathname == "/health":
-        return layout_page_health
-    elif pathname == "/stress":
-        return layout_page_stress
-    elif pathname == "/result":
-        return layout_page_result     
-    else:
-        return layout_page_profile
-
-
-
-
-@app.callback(
-    [Output('selected-user', 'data'), Output('output-element', 'children')],
-    Input('button-element', 'n_clicks'),
-    State('input-element', 'value')
-)
-def on_signin(n_clicks, value):
-    if value is None:
-        raise PreventUpdate
-    elif value in users:
-        return value, dbc.Button(dcc.Link("Continue", href="/", className="fw-normal", style={"textDecoration": "none", "color": "inherit"}), outline=True, color="dark", className="d-flex align-items-center justify-content-center")
-    else:
-        return value, html.P("Not a proper UID", className="lead mt-1")
-
-
-
+    return body_physical  
 
 @app.callback(
     Output('user-infos', 'children'),
-    Input('selected-user', 'data'),
-    prevenet_initial_call=False
+    Input('my-dropdown', 'value')
 )
-def get_user_infos(value):
-    my_list = x.extract_user_info(value)
-    if my_list == []:
-        return "Hey"
-    return my_list
+def user_infos(value):
+    if value is None:
+        raise PreventUpdate
+    else:
+        infos = x.extract_user_info(value)
+        return body_infos_1(value, infos)
 
+
+
+@app.callback(
+    Output('gsr-hrv-time', 'children'),
+    Output('phy-activity', 'children'),
+    Input('my-dropdown', 'value')
+)
+def insert_graphs(value):
+    if value is None:
+        raise PreventUpdate
+    else:
+        skin_gsr_hrv, phy, level = x.wrapper_function(value, cleaned=True)        
+        return gsr_hrv_time(skin_gsr_hrv, level), physical_activity_graph(phy)
 
 
 if __name__ == "__main__":
     app.run_server(debug=True)
-
-

@@ -4,6 +4,7 @@ import numpy as np
 from functools import reduce
 import plotly.graph_objects as go
 from statsmodels.formula.api import ols
+import plotly.express as px
 
 P0701=pd.read_csv('HRV_GSR_Temperature/P0701TempGSRHRV.csv')
 P0702=pd.read_csv('HRV_GSR_Temperature/P0702TempGSRHRV.csv')
@@ -160,13 +161,19 @@ P3027.set_index('timestamp', drop=True, inplace=True,append=False)
 P3028.set_index('timestamp', drop=True, inplace=True,append=False)
 P3029.set_index('timestamp', drop=True, inplace=True,append=False)
 P3030.set_index('timestamp', drop=True, inplace=True,append=False)
-P3030.to_csv('P3030Test.csv')
 
-dfs=[P0701,P0702,P0703,P0704,P0705,P0706,P0707,P0708,P0709,P0710,P0711,P0712,P0713,P0714,P0715,P0716,P0717,P0718,
+
+dfs=np.array([P0701,P0702,P0703,P0704,P0705,P0706,P0707,P0708,P0709,P0710,P0711,P0712,P0713,P0714,P0715,P0716,P0717,P0718,
 P0719,P0721,P0722,P0723,P0725,P0726,P0727,P0728,P0729,P1501,P1502,P1503,P1504,P1505,P1506,P1507,P1508,P1509,P1510,P1511,P1514,
 P1515,P1516,P1517,P1518,P1519,P1520,P1521,P1522,P1523,P1525,P1526,P1527,P3001,P3002,P3003,P3005,P3007,P3008,P3009,P3010,P3011,P3012,
-P3013,P3014,P3015,P3016,P3017,P3018,P3019,P3021,P3022,P3023,P3024,P3025,P3027,P3028,P3029,P3030]
+P3013,P3014,P3015,P3016,P3017,P3018,P3019,P3021,P3022,P3023,P3024,P3025,P3027,P3028,P3029,P3030])
+dfnames=np.array(['P0701','P0702','P0703','P0704','P0705','P0706','P0707','P0708','P0709','P0710','P0711','P0712','P0713','P0714','P0715','P0716','P0717','P0718',
+'P0719','P0721','P0722','P0723','P0725','P0726','P0727','P0728','P0729','P1501','P1502','P1503','P1504','P1505','P1506','P1507','P1508','P1509','P1510','P1511','P1514',
+'P1515','P1516','P1517','P1518','P1519','P1520','P1521','P1522','P1523','P1525','P1526','P1527','P3001','P3002','P3003','P3005','P3007','P3008','P3009','P3010','P3011','P3012',
+'P3013','P3014','P3015','P3016','P3017','P3018','P3019','P3021','P3022','P3023','P3024','P3025','P3027','P3028','P3029','P3030'])
 
+for df in dfs:
+    df.drop(['Unnamed: 0'], axis=1, inplace=True)
 #combinedDf=dfs[0].join(dfs[1:], on=['Resistance', 'Interval', 'Temperature'])
 #combinedDf=reduce(lambda left, right:pd.merge(left, right, how='outer', on=['timestamp']), dfs)
 #combinedDf.to_csv('CombineNew.csv')
@@ -175,7 +182,7 @@ combinedDf.sort_index(ascending=False)
 combinedDf['Timestamp']=pd.to_datetime(combinedDf.index, unit='ms')
 combinedDf['OldTimestamp']=combinedDf.index
 combinedDf.set_index('Timestamp', drop=True, inplace=True, append=False)
-combinedDf.drop(['Unnamed: 0'], axis=1, inplace=True)
+#combinedDf.drop(['Unnamed: 0'], axis=1, inplace=True)
 #combinedDf.to_csv('CombineTimeNew.csv')
 #combinedDf.to_csv('CombineConcat.csv')
 
@@ -194,6 +201,9 @@ filterTemperature2=combinedDf1.Temperature<(tempQ3+tempIQR)
 
 combinedDf2=combinedDf1.loc[filterTemperature1 & filterTemperature2]
 
+#figInterval=px.box(combinedDf2, y="Interval")
+#figInterval.show()
+
 HRVQ1=combinedDf2.Interval.quantile(0.25)
 HRVQ2=combinedDf2.Interval.quantile(0.5)
 HRVQ3=combinedDf2.Interval.quantile(0.75)
@@ -203,19 +213,23 @@ filterHRV1=combinedDf2.Interval>(HRVQ1-HRVIQR)
 filterHRV2=combinedDf2.Interval<(HRVQ3+HRVIQR)
 combinedDf3=combinedDf2.loc[filterHRV1 & filterHRV2]
 
-combinedDf3['Resistance']=pd.to_numeric(combinedDf3.Resistance)
-combinedDf3['Temperature']=pd.to_numeric(combinedDf3.Temperature)
-combinedDf3['Interval']=pd.to_numeric(combinedDf3.Interval)
+#combinedDf3['Resistance']=pd.to_numeric(combinedDf3.Resistance)
+#combinedDf3['Temperature']=pd.to_numeric(combinedDf3.Temperature)
+#combinedDf3['Interval']=pd.to_numeric(combinedDf3.Interval)
+combinedDf3=combinedDf3.astype({'Resistance':int, 'Temperature':float, 'Interval':float})
 
 fit=ols('Resistance ~ Temperature', data=combinedDf3).fit()
-print(fit.params.Intercept) #2624.752255684897
-print(fit.params.Temperature) #-34.15565883625539
+print(fit.params.Intercept) #2769.4712902962815
+print(fit.params.Temperature) #-38.327905604176586
 fit.summary()
 
 combinedDf3['CalculatedResistance']=(fit.params.Temperature*combinedDf3['Temperature']+fit.params.Intercept)
 combinedDf3['GSRDifference']=combinedDf3.CalculatedResistance-combinedDf3.Resistance
-
-fig=go.Figure()
+combinedDf3.to_csv("finalPreprocessed.csv")
+#combinedDf3.style.format({'CalculatedResistance':'{:.4f}', 'GSRDifference':'{:.4f}'},precision=4)
+#combinedDf3.to_csv('Regression.csv')
+#combinedDf3.to_csv('RegressionRound.csv')
+#fig=go.Figure()
 #fig.add_trace(go.Scatter(x=combinedDf2.Temperature, y=combinedDf2.Resistance, mode='markers'))
 #fig.update_layout(
 #    xaxis=dict(
@@ -225,6 +239,27 @@ fig=go.Figure()
 #    title='Temperature vs GSR',
 #    width=900
 #    )
+#print(combinedDf2['Interval'].unique())
+#print(combinedDf2['Interval'].value_counts())
+#print(combinedDf3['Interval'].unique())
 
-fig.add_trace(go.Scatter(x=combinedDf3['GSRDifference'], y=combinedDf3['Interval'], mode='markers'))
-fig.show()
+#fig.add_trace(go.Scatter(x=combinedDf3['GSRDifference'], y=combinedDf3['Interval'], mode='markers'))
+#fig.show()
+index=0
+for df in dfs:
+    filterResistanceIndividual1=df['Resistance']>10
+    filterResistanceIndividual2=df['Resistance']<10000
+    filterInterval1=df['Interval']>(HRVQ1-HRVIQR)
+    filterInterval2=df['Interval']<(HRVQ3+HRVIQR)
+    filterTemperature1=df['Temperature']>(tempQ1-tempIQR)
+    filterTemperature2=df['Temperature']<(tempQ3+tempIQR)
+    tempDf1=df.loc[filterResistanceIndividual1 & filterResistanceIndividual2]
+    tempDf2=tempDf1.loc[filterInterval1 & filterInterval2]
+    finalDf=tempDf1.loc[filterTemperature1 & filterTemperature2]
+    #dfIndex=dfs.index(df)
+    dfIndex=index
+    dfname=dfnames[dfIndex]
+    nameString=f'Preprocessed{dfname}.csv'
+    #finalDf.to_csv(nameString)
+    index=index+1
+print("Done")

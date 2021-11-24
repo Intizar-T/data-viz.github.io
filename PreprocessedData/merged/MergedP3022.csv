@@ -1,0 +1,3 @@
+,timestamp,Resistance,Interval,Temperature,Timestamp,confidence,type,OldTimestamp,ActivityScore
+0,1557140296400,503,0.647088,31.61,2019-05-06 10:58:16.400,1.0,ON_FOOT,50829,0.1
+1,1557140296400,503,0.647088,31.61,2019-05-06 10:58:16.400,1.0,WALKING,50830,0.5

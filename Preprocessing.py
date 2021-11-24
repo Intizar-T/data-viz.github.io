@@ -57,6 +57,7 @@ P1523=pd.read_csv('HRV_GSR_Temperature/P1523TempGSRHRV.csv')
 P1525=pd.read_csv('HRV_GSR_Temperature/P1525TempGSRHRV.csv')
 P1526=pd.read_csv('HRV_GSR_Temperature/P1526TempGSRHRV.csv')
 P1527=pd.read_csv('HRV_GSR_Temperature/P1527TempGSRHRV.csv')
+P1541=pd.read_csv('HRV_GSR_Temperature/P1541TempGSRHRV.csv')
 P3001=pd.read_csv('HRV_GSR_Temperature/P3001TempGSRHRV.csv')
 P3002=pd.read_csv('HRV_GSR_Temperature/P3002TempGSRHRV.csv')
 P3003=pd.read_csv('HRV_GSR_Temperature/P3003TempGSRHRV.csv')
@@ -83,6 +84,7 @@ P3027=pd.read_csv('HRV_GSR_Temperature/P3027TempGSRHRV.csv')
 P3028=pd.read_csv('HRV_GSR_Temperature/P3028TempGSRHRV.csv')
 P3029=pd.read_csv('HRV_GSR_Temperature/P3029TempGSRHRV.csv')
 P3030=pd.read_csv('HRV_GSR_Temperature/P3030TempGSRHRV.csv')
+P3041=pd.read_csv('HRV_GSR_Temperature/P3041TempGSRHRV.csv')
 
 P0701.set_index('timestamp', drop=True,append=False, inplace=True)
 P0702.set_index('timestamp', drop=True, inplace=True, append=False)
@@ -135,6 +137,8 @@ P1523.set_index('timestamp', drop=True, inplace=True,append=False)
 P1525.set_index('timestamp', drop=True, inplace=True,append=False)
 P1526.set_index('timestamp', drop=True, inplace=True,append=False)
 P1527.set_index('timestamp', drop=True, inplace=True,append=False)
+P1541.set_index('timestamp', drop=True, inplace=True,append=False)
+
 P3001.set_index('timestamp', drop=True, inplace=True,append=False)
 P3002.set_index('timestamp', drop=True, inplace=True,append=False)
 P3003.set_index('timestamp', drop=True, inplace=True,append=False)
@@ -161,16 +165,17 @@ P3027.set_index('timestamp', drop=True, inplace=True,append=False)
 P3028.set_index('timestamp', drop=True, inplace=True,append=False)
 P3029.set_index('timestamp', drop=True, inplace=True,append=False)
 P3030.set_index('timestamp', drop=True, inplace=True,append=False)
+P3041.set_index('timestamp', drop=True, inplace=True,append=False)
 
 
 dfs=np.array([P0701,P0702,P0703,P0704,P0705,P0706,P0707,P0708,P0709,P0710,P0711,P0712,P0713,P0714,P0715,P0716,P0717,P0718,
 P0719,P0721,P0722,P0723,P0725,P0726,P0727,P0728,P0729,P1501,P1502,P1503,P1504,P1505,P1506,P1507,P1508,P1509,P1510,P1511,P1514,
-P1515,P1516,P1517,P1518,P1519,P1520,P1521,P1522,P1523,P1525,P1526,P1527,P3001,P3002,P3003,P3005,P3007,P3008,P3009,P3010,P3011,P3012,
-P3013,P3014,P3015,P3016,P3017,P3018,P3019,P3021,P3022,P3023,P3024,P3025,P3027,P3028,P3029,P3030])
+P1515,P1516,P1517,P1518,P1519,P1520,P1521,P1522,P1523,P1525,P1526,P1527,P1541,P3001,P3002,P3003,P3005,P3007,P3008,P3009,P3010,P3011,P3012,
+P3013,P3014,P3015,P3016,P3017,P3018,P3019,P3021,P3022,P3023,P3024,P3025,P3027,P3028,P3029,P3030, P3041])
 dfnames=np.array(['P0701','P0702','P0703','P0704','P0705','P0706','P0707','P0708','P0709','P0710','P0711','P0712','P0713','P0714','P0715','P0716','P0717','P0718',
 'P0719','P0721','P0722','P0723','P0725','P0726','P0727','P0728','P0729','P1501','P1502','P1503','P1504','P1505','P1506','P1507','P1508','P1509','P1510','P1511','P1514',
-'P1515','P1516','P1517','P1518','P1519','P1520','P1521','P1522','P1523','P1525','P1526','P1527','P3001','P3002','P3003','P3005','P3007','P3008','P3009','P3010','P3011','P3012',
-'P3013','P3014','P3015','P3016','P3017','P3018','P3019','P3021','P3022','P3023','P3024','P3025','P3027','P3028','P3029','P3030'])
+'P1515','P1516','P1517','P1518','P1519','P1520','P1521','P1522','P1523','P1525','P1526','P1527','P1541','P3001','P3002','P3003','P3005','P3007','P3008','P3009','P3010','P3011','P3012',
+'P3013','P3014','P3015','P3016','P3017','P3018','P3019','P3021','P3022','P3023','P3024','P3025','P3027','P3028','P3029','P3030','P3041'])
 
 for df in dfs:
     df.drop(['Unnamed: 0'], axis=1, inplace=True)
@@ -260,6 +265,138 @@ for df in dfs:
     dfIndex=index
     dfname=dfnames[dfIndex]
     nameString=f'Preprocessed{dfname}.csv'
-    #finalDf.to_csv(nameString)
+    finalDf.to_csv(nameString)
     index=index+1
+
+P0701P=pd.read_csv('PhysicalActivity/P0701PhysicalActivity.csv')
+P0702P=pd.read_csv('PhysicalActivity/P0702PhysicalActivity.csv')
+P0703P=pd.read_csv('PhysicalActivity/P0703PhysicalActivity.csv')
+P0704P=pd.read_csv('PhysicalActivity/P0704PhysicalActivity.csv')
+P0705P=pd.read_csv('PhysicalActivity/P0705PhysicalActivity.csv')
+P0706P=pd.read_csv('PhysicalActivity/P0706PhysicalActivity.csv')
+P0707P=pd.read_csv('PhysicalActivity/P0707PhysicalActivity.csv')
+P0708P=pd.read_csv('PhysicalActivity/P0708PhysicalActivity.csv')
+P0709P=pd.read_csv('PhysicalActivity/P0709PhysicalActivity.csv')
+P0710P=pd.read_csv('PhysicalActivity/P0710PhysicalActivity.csv')
+P0711P=pd.read_csv('PhysicalActivity/P0711PhysicalActivity.csv')
+P0712P=pd.read_csv('PhysicalActivity/P0712PhysicalActivity.csv')
+P0713P=pd.read_csv('PhysicalActivity/P0713PhysicalActivity.csv')
+P0714P=pd.read_csv('PhysicalActivity/P0714PhysicalActivity.csv')
+P0715P=pd.read_csv('PhysicalActivity/P0715PhysicalActivity.csv')
+P0716P=pd.read_csv('PhysicalActivity/P0716PhysicalActivity.csv')
+P0717P=pd.read_csv('PhysicalActivity/P0717PhysicalActivity.csv')
+P0718P=pd.read_csv('PhysicalActivity/P0718PhysicalActivity.csv')
+P0719P=pd.read_csv('PhysicalActivity/P0719PhysicalActivity.csv')
+P0721P=pd.read_csv('PhysicalActivity/P0721PhysicalActivity.csv')
+P0722P=pd.read_csv('PhysicalActivity/P0722PhysicalActivity.csv')
+P0723P=pd.read_csv('PhysicalActivity/P0723PhysicalActivity.csv')
+P0725P=pd.read_csv('PhysicalActivity/P0725PhysicalActivity.csv')
+P0726P=pd.read_csv('PhysicalActivity/P0726PhysicalActivity.csv')
+P0727P=pd.read_csv('PhysicalActivity/P0727PhysicalActivity.csv')
+P0728P=pd.read_csv('PhysicalActivity/P0728PhysicalActivity.csv')
+P0729P=pd.read_csv('PhysicalActivity/P0719PhysicalActivity.csv')
+P1501P=pd.read_csv('PhysicalActivity/P1501PhysicalActivity.csv')
+P1502P=pd.read_csv('PhysicalActivity/P1502PhysicalActivity.csv')
+P1503P=pd.read_csv('PhysicalActivity/P1503PhysicalActivity.csv')
+P1504P=pd.read_csv('PhysicalActivity/P1504PhysicalActivity.csv')
+P1505P=pd.read_csv('PhysicalActivity/P1505PhysicalActivity.csv')
+P1506P=pd.read_csv('PhysicalActivity/P1506PhysicalActivity.csv')
+P1507P=pd.read_csv('PhysicalActivity/P1507PhysicalActivity.csv')
+P1508P=pd.read_csv('PhysicalActivity/P1508PhysicalActivity.csv')
+P1509P=pd.read_csv('PhysicalActivity/P1509PhysicalActivity.csv')
+P1510P=pd.read_csv('PhysicalActivity/P1510PhysicalActivity.csv')
+P1511P=pd.read_csv('PhysicalActivity/P1511PhysicalActivity.csv')
+P1514P=pd.read_csv('PhysicalActivity/P1514PhysicalActivity.csv')
+P1515P=pd.read_csv('PhysicalActivity/P1515PhysicalActivity.csv')
+P1516P=pd.read_csv('PhysicalActivity/P1516PhysicalActivity.csv')
+P1517P=pd.read_csv('PhysicalActivity/P1517PhysicalActivity.csv')
+P1518P=pd.read_csv('PhysicalActivity/P1518PhysicalActivity.csv')
+P1519P=pd.read_csv('PhysicalActivity/P1519PhysicalActivity.csv')
+P1520P=pd.read_csv('PhysicalActivity/P1520PhysicalActivity.csv')
+P1521P=pd.read_csv('PhysicalActivity/P1521PhysicalActivity.csv')
+P1522P=pd.read_csv('PhysicalActivity/P1522PhysicalActivity.csv')
+P1523P=pd.read_csv('PhysicalActivity/P1523PhysicalActivity.csv')
+P1525P=pd.read_csv('PhysicalActivity/P1525PhysicalActivity.csv')
+P1526P=pd.read_csv('PhysicalActivity/P1526PhysicalActivity.csv')
+P1527P=pd.read_csv('PhysicalActivity/P1527PhysicalActivity.csv')
+P1541P=pd.read_csv('PhysicalActivity/P1541PhysicalActivity.csv')
+P3001P=pd.read_csv('PhysicalActivity/P3001PhysicalActivity.csv')
+P3002P=pd.read_csv('PhysicalActivity/P3002PhysicalActivity.csv')
+P3003P=pd.read_csv('PhysicalActivity/P3003PhysicalActivity.csv')
+P3005P=pd.read_csv('PhysicalActivity/P3005PhysicalActivity.csv')
+P3007P=pd.read_csv('PhysicalActivity/P3007PhysicalActivity.csv')
+P3008P=pd.read_csv('PhysicalActivity/P3008PhysicalActivity.csv')
+P3009P=pd.read_csv('PhysicalActivity/P3009PhysicalActivity.csv')
+P3010P=pd.read_csv('PhysicalActivity/P3010PhysicalActivity.csv')
+P3011P=pd.read_csv('PhysicalActivity/P3011PhysicalActivity.csv')
+P3012P=pd.read_csv('PhysicalActivity/P3012PhysicalActivity.csv')
+P3013P=pd.read_csv('PhysicalActivity/P3013PhysicalActivity.csv')
+P3014P=pd.read_csv('PhysicalActivity/P3014PhysicalActivity.csv')
+P3015P=pd.read_csv('PhysicalActivity/P3015PhysicalActivity.csv')
+P3016P=pd.read_csv('PhysicalActivity/P3016PhysicalActivity.csv')
+P3017P=pd.read_csv('PhysicalActivity/P3017PhysicalActivity.csv')
+P3018P=pd.read_csv('PhysicalActivity/P3018PhysicalActivity.csv')
+P3019P=pd.read_csv('PhysicalActivity/P3019PhysicalActivity.csv')
+P3021P=pd.read_csv('PhysicalActivity/P3021PhysicalActivity.csv')
+P3022P=pd.read_csv('PhysicalActivity/P3022PhysicalActivity.csv')
+P3023P=pd.read_csv('PhysicalActivity/P3023PhysicalActivity.csv')
+P3024P=pd.read_csv('PhysicalActivity/P3024PhysicalActivity.csv')
+P3025P=pd.read_csv('PhysicalActivity/P3025PhysicalActivity.csv')
+P3027P=pd.read_csv('PhysicalActivity/P3027PhysicalActivity.csv')
+P3028P=pd.read_csv('PhysicalActivity/P3028PhysicalActivity.csv')
+P3029P=pd.read_csv('PhysicalActivity/P3029PhysicalActivity.csv')
+P3030P=pd.read_csv('PhysicalActivity/P3030PhysicalActivity.csv')
+P3041P=pd.read_csv('PhysicalActivity/P3041PhysicalActivity.csv')
+
+pdfs=np.array([P0701P,P0702P,P0703P,P0704P,P0705P,P0706P,P0707P,P0708P,P0709P,P0710P,P0711P,P0712P,P0713P,P0714P,P0715P,P0716P,P0717P,P0718P,
+P0719P,P0721P,P0722P,P0723P,P0725P,P0726P,P0727P,P0728P,P0729P,P1501P,P1502P,P1503P,P1504P,P1505P,P1506P,P1507P,P1508P,P1509P,P1510P,P1511P,P1514P,
+P1515P,P1516P,P1517P,P1518P,P1519P,P1520P,P1521P,P1522P,P1523P,P1525P,P1526P,P1527P,P1541P,P3001P,P3002P,P3003P,P3005P,P3007P,P3008P,P3009P,P3010P,P3011P,P3012P,
+P3013P,P3014P,P3015P,P3016P,P3017P,P3018P,P3019P,P3021P,P3022P,P3023P,P3024P,P3025P,P3027P,P3028P,P3029P,P3030P,P3041P])
+pdfnames=np.array(['P0701P','P0702P','P0703P','P0704P','P0705P','P0706P','P0707P','P0708P','P0709P','P0710P','P0711P','P0712P','P0713P','P0714P','P0715P','P0716P','P0717P','P0718P',
+'P0719P','P0721P','P0722P','P0723P','P0725P','P0726P','P0727P','P0728P','P0729P','P1501P','P1502P','P1503P','P1504P','P1505P','P1506P','P1507P','P1508P','P1509P','P1510P','P1511P','P1514P',
+'P1515P','P1516P','P1517P','P1518P','P1519P','P1520P','P1521P','P1522P','P1523P','P1525P','P1526P','P1527P','P1541P','P3001P','P3002P','P3003P','P3005P','P3007P','P3008P','P3009P','P3010P','P3011P','P3012P',
+'P3013P','P3014P','P3015P','P3016P','P3017P','P3018P','P3019P','P3021P','P3022P','P3023P','P3024P','P3025P','P3027P','P3028P','P3029P','P3030P','P3041P'])
+
+index=0
+for pdf in pdfs:
+    pdf.drop(['Unnamed: 0'], axis=1, inplace=True)
+    pdf=pdf.round({'timestamp':-2})
+    pdf['Timestamp']=pd.to_datetime(pdf.timestamp, unit='ms')
+    pdf['OldTimestamp']=pdf.index
+    pdf.set_index('Timestamp', drop=True, inplace=True, append=False)
+    pdf=pdf.astype({'confidence':float})
+
+    Pfilter=pdf['confidence']>=0.5
+    temppdf=pdf.loc[Pfilter]
+    
+    tempList=[]
+    for idx,row in temppdf.iterrows():
+        if row['type']=="STILL":
+            #row['ActivityScore']=0
+            tempList.append(0)
+        elif row['type']=='ON_FOOT':
+            #row['ActivityScore']=0.1
+            tempList.append(0.1)
+        elif row['type']=='WALKING':
+            tempList.append(0.5)
+            #row['ActivityScore']=0.5
+        elif row['type']=='RUNNING' or row['type']=='ON_BICYCLE':
+            tempList.append(0.8)
+            #row['ActivityScore']=0.8
+        else:
+            tempList.append(np.nan)
+            #row['ActivityScore']=np.nan
+    temppdf['ActivityScore']=tempList
+    
+    pdfname=pdfnames[index]
+    pnameString=f'Preprocessed{pdfname}P.csv'
+    temppdf.to_csv(pnameString)
+    index=index+1
+#PcombinedDf=pd.concat(pdfs)
+#PcombinedDf.sort_index(ascending=False)
+#PcombinedDf['Timestamp']=pd.to_datetime(PcombinedDf.index, unit='ms')
+#PcombinedDf['OldTimestamp']=PcombinedDf.index
+#PcombinedDf.set_index('Timestamp', drop=True, inplace=True, append=False)
+
+#PcombinedDf.to_csv('CombinedActivity.csv')
 print("Done")

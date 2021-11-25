@@ -40,7 +40,10 @@ import csv
 class preprocess():
     def __init__(self):
         self.project_path = pathlib.Path.cwd().parent
-        self.data_list = os.listdir(os.path.join(self.project_path, 'data'))[2:-2]
+        if os.path.join(self.project_path, 'data').exists():
+            self.data_list = os.listdir(os.path.join(self.project_path, 'data'))[2:-2]
+        else:
+            self.data_list = []
         ## Make sure this is written in alphabetic order
         ## Pick any attribute with its features
         self.our_attributes = {
@@ -54,9 +57,13 @@ class preprocess():
     ## ------ This function provides a list of all available users ------ ##
     def users(self):
         list_of_users_UID = []
-        for user in self.data_list:
-            id = re.sub(r'.zip', "", user)
-            list_of_users_UID.append(id)
+        if len(self.data_list) == 0:
+            data_list = pd.read_csv(os.path.join(self.project_path, 'users_UID.csv'))
+            list_of_users_UID = data_list['users'].to_list()
+        else:
+            for user in self.data_list:
+                id = re.sub(r'.zip', "", user)
+                list_of_users_UID.append(id)
         return list_of_users_UID
 
     ## ------ This function extract the user's info from the given user_info.csv file ------ ##

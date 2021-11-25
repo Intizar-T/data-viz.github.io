@@ -10,6 +10,8 @@ from flask import Flask
 from dash import dcc, html
 from dash.dependencies import Output, Input, State
 from dash.exceptions import PreventUpdate
+from plotly.subplots import make_subplots
+
 
 server = Flask(__name__)
 app = dash.Dash(__name__, server=server, external_stylesheets=[dbc.themes.BOOTSTRAP, dbc.icons.BOOTSTRAP, dbc.icons.FONT_AWESOME])
@@ -26,7 +28,8 @@ app.layout = html.Div(
             html.Div(id="user-infos", children=[]),
             html.Br(),
             html.Div(id="gsr-hrv-time", children=[]),
-            html.Br(),          
+            html.Br(),
+            html.Br(),         
             html.Div(id="phy-activity", children=[])
         ]
 )
@@ -236,23 +239,30 @@ def stress_level(df):
 
 
 def gsr_hrv_time(df1, df2):
+    if 'timestamp' in list(df1.columns):
+        df1['timestamp'] = pd.to_datetime(df1['timestamp'], unit='ms')
+        df1.set_index('timestamp', drop=True, inplace=True)
+    if 'timestamp' in list(df1.columns):
+        df2['timestamp'] = pd.to_datetime(df2['timestamp'], unit='ms')
+        df2.set_index('timestamp', drop=True, inplace=True)
+    
     card_hrv = dbc.Card(
         dbc.CardBody(
             [
                 html.H4("HRV", className="card-title display-5 fw-normal"),
                 html.Br(),
-                html.P("Who knew how important the interval between each of your heartbeats are?", className="card-subtitle lead fw-normal"),
+                html.P("Did you know the importance of the interval between each of your heartbeats?", className="card-subtitle lead fw-normal", style={'fontStyle':'italic'}),
                 html.Br(),
                 html.P(
-                    "Heart rate variability (HRV) means the variation in time between consecutive heartbeats. It is universally accepted as a non-invasive marker of autonomic nervous system (ANS) activity.",
+                    "Heart Rate Variability (HRV) means the variation in time between consecutive heartbeats",
                     className="card-text"
                 ),
                 html.P(
-                    "Heart rate variability increases during relaxing and recovering activities and decreases during stress.",
+                    "HRV increases during relaxing and recovering activities and decreases during stress.",
                     className="card-text"
                 ),
                 html.Br(),           
-                dbc.CardLink("Read More", href="https://www.firstbeat.com/en/science-and-physiology/heart-rate-variability/", style={"textDecoration": "none", "color": "inherit"}),
+                dbc.CardLink("Read More", href="https://www.firstbeat.com/en/science-and-physiology/heart-rate-variability/", target="_blanket", style={"textDecoration": "none", "color": "inherit"}),
             ]
         ),
         style={"width": "18rem"},
@@ -263,16 +273,18 @@ def gsr_hrv_time(df1, df2):
             [
                 html.H4("GSR", className="card-title display-5 fw-normal"),
                 html.Br(),
-                html.P("What you wear on your body can actually indicate ...", className="card-subtitle lead fw-normal"),
+                html.P("Did you know your stress level can be estimated using a simple wrist band?", className="card-subtitle lead fw-normal", style={'fontStyle':'italic'}),
                 html.Br(),
                 html.P(
-                    "GSR can be used as a stress indicator when analyzed carefully"
-                    "Some quick example text to build on the card title and make "
-                    "up the bulk of the card's content.",
+                    "Galvanic Skin Response that utilizes skin conductance which is known to be directly involved in the emotional behavioural regulation in humans.",                   
+                    className="card-text",
+                ),
+                html.P(
+                    "Therefore, it can be used as a stress indicator when analyzed carefully",
                     className="card-text",
                 ),
                 html.Br(),          
-                dbc.CardLink("Read More", href="#", style={"textDecoration": "none", "color": "inherit"}),
+                dbc.CardLink("Read More", href="https://iopscience.iop.org/article/10.1088/1742-6596/1372/1/012001/pdf#:~:text=Stress%20is%20one%20of%20the,human%20health%20in%20many%20aspects.&text=Physiological%20information%20can%20be%20used,emotional%20behavioural%20regulation%20in%20humans.", target="_blanket", style={"textDecoration": "none", "color": "inherit"}),
             ]
         ),
         style={"width": "18rem"},
@@ -328,24 +340,102 @@ def gsr_hrv_time(df1, df2):
             marker_color="#35478C")
     )
 
-    #gsr_hrv_graph = px.scatter(df1.sort_values(by='label'), x='Gsr_difference', y='Interval', color='label', color_discrete_sequence=['#7FB2F0', '#B50000', '#35478C', '#750000'])
     gsr_hrv_graph.update_layout(showlegend=False, template='plotly_dark')
     gsr_hrv_graph.update_xaxes(title_text='', showticklabels=False)
-    gsr_hrv_graph.update_yaxes(title_text='Hear Rate Variability')
+    gsr_hrv_graph.update_yaxes(title_text='Heart Rate Variability')
 
-    hrv_time_graph = go.Figure()
-    hrv_time_graph.add_trace(
+    hrv_time_graph1 = go.Figure()
+    hrv_time_graph1.add_trace(
         go.Scatter(
-            x=df1.index,
-            y=df1['Interval'],
-            mode='lines+markers',
-            name='HRV',
-            line_color='rgb(0,100,80)'
-            )
+            x=df1[df1['label'] == 'Very Poor'].index,
+            y=df1[df1['label'] == 'Very Poor']['Interval'],
+            marker_color="#750000",
+            mode= 'markers')
+        )
+    hrv_time_graph1.add_trace(
+        go.Scatter(
+            x=df1[df1['label'] == 'Poor'].index,
+            y=df1[df1['label'] == 'Poor']['Interval'],
+            marker_color="#B50000",
+            mode= 'markers')
+        )
+    hrv_time_graph1.add_trace(
+        go.Scatter(
+            x=df1[df1['label'] == 'Good'].index,
+            y=df1[df1['label'] == 'Good']['Interval'],
+            marker_color="#7FB2F0",
+            mode= 'markers')
+        )
+    hrv_time_graph1.add_trace(
+        go.Scatter(
+            x=df1[df1['label'] == 'Very Good'].index,
+            y=df1[df1['label'] == 'Very Good']['Interval'],
+            marker_color="#35478C",
+            mode= 'markers')
+        )
+
+    hrv_time_graph1.update_layout(
+        yaxis_title='Hear Rate Variability',
+        xaxis=
+            dict(
+                rangeselector=dict(
+                    buttons=list([
+                        dict(label="min", step="minute"),
+                        dict(label="hour", step="hour"),
+                        dict(label="day", step="day"),
+                        dict(label="month", step="month"),
+                        dict(label="all", step="all")
+                    ])
+                )
+            ),
+        showlegend=False,
+        template='plotly_dark'
     )
-    hrv_time_graph.update_layout(
-        xaxis_title='Time',
-        yaxis_title='HRV',
+
+    hrv_time_graph2 = make_subplots(rows=4, cols=1, shared_yaxes=True, vertical_spacing=0.05)
+    hrv_time_graph2.add_trace(
+        go.Scatter(
+            x=df1[df1['label'] == 'Very Poor'].index,
+            y=df1[df1['label'] == 'Very Poor']['Interval'],
+            marker_color="#750000",
+            fill='tonexty',
+            mode= 'lines',
+            line=dict(width=1, color='#750000')),
+            row=1, col=1
+        )
+    hrv_time_graph2.add_trace(
+        go.Scatter(
+            x=df1[df1['label'] == 'Poor'].index,
+            y=df1[df1['label'] == 'Poor']['Interval'],
+            marker_color="#B50000",
+            fill='tonexty',
+            mode= 'lines',
+            line=dict(width=1, color='#B50000')),
+            row=2, col=1
+        )
+    hrv_time_graph2.add_trace(
+        go.Scatter(
+            x=df1[df1['label'] == 'Good'].index,
+            y=df1[df1['label'] == 'Good']['Interval'],
+            marker_color="#7FB2F0",
+            fill='tonexty',
+            mode= 'lines',
+            line=dict(width=1, color='#7FB2F0')),
+            row=3, col=1
+        )
+    hrv_time_graph2.add_trace(
+        go.Scatter(
+            x=df1[df1['label'] == 'Very Good'].index,
+            y=df1[df1['label'] == 'Very Good']['Interval'],
+            marker_color="#35478C",
+            fill='tonexty',
+            mode= 'lines',
+            line=dict(width=1, color='#35478C')),
+            row=4, col=1
+        )
+    
+    hrv_time_graph2.update_layout(
+        yaxis_title='Hear Rate Variability',
         xaxis=
             dict(
                 rangeselector=dict(
@@ -357,7 +447,9 @@ def gsr_hrv_time(df1, df2):
                         dict(label="all", step="all")
                     ])
                 )
-            )
+            ),
+        showlegend=False,
+        template='plotly_dark'
     )
 
     body_health = html.Div(
@@ -376,14 +468,17 @@ def gsr_hrv_time(df1, df2):
                     dbc.Col(
                         [
                             dcc.Graph(figure=gsr_hrv_graph),
-                            dcc.Graph(figure=hrv_time_graph) 
+                            html.Br(),
+                            html.Br(),
+                            html.Br(),
+                            html.Br(),
+                            dcc.Graph(figure=hrv_time_graph2) 
                         ],
                         className="offset-sm-2 col-sm-10 col-md-6"
-
                     )
                 ]
             ),
-        
+            html.Br(),
             progress_bar
         ]
     )
@@ -393,6 +488,11 @@ def gsr_hrv_time(df1, df2):
 
 
 def physical_activity_graph(df):
+
+    if 'OldTimestamp' in list(df.columns):
+        df.drop(['timestamp', 'OldTimestamp', 'ActivityScore'], axis=1, inplace=True)
+        df.set_index('Timestamp', drop=True, inplace=True)
+
     card_physical = dbc.Card(
         dbc.CardBody(
             [
@@ -412,10 +512,28 @@ def physical_activity_graph(df):
         ),
         style={"width": "18rem"},
     )
+    
+    physical_graph_pie = px.pie(df, values='confidence', color='type', color_discrete_sequence=px.colors.sequential.RdBu)
+    physical_graph_pie.update_traces(textposition='inside', textinfo='percent+label')
 
-    physical_graph = px.scatter(df, y='confidence', color="type")
+    physical_graph = px.scatter(df, y='confidence', color='type')
     physical_graph.update_layout(template='plotly_dark')
     physical_graph.update_xaxes(title_text='')
+
+    physical_bar = go.Figure()
+    physical_bar.add_trace(
+        go.Bar(
+            x=df.index,
+            y=df[df['type'] == 'ON_BICYCLE']
+        )
+    )
+    physical_bar.add_trace(
+        go.Bar(
+            x=df.index,
+            y=df[df['type'] == 'TILTING']
+        )
+    )
+    physical_bar.update_layout(barmode='group')
 
     page_footer = html.Footer(
         html.Div(
@@ -479,23 +597,16 @@ def physical_activity_graph(df):
         [
             dbc.Row(
                 [
-                    dbc.Row([
-                        html.Div(html.Button("AM", id="am", className="me-2 btn btn-secondary px-10", n_clicks=0), className="btn-group btn-group-sm mr-1", style={"margin": "100px 5px 0px 105px", "width":"15%"}),
-                        html.Div(html.Button("PM", id="pm", className="me-2 btn btn-secondary px-10", n_clicks=0), className="btn-group btn-group-sm mr-1", style={"margin": "100px 5px 0px 20px", "width":"15%"})
-                    ]),
-                    dbc.Row(
-                        dbc.Col(
-                            dcc.Graph(figure=physical_graph),
-                            className="offset-md-1"
-                        )
-                    )
-                ]
-            ),
-            html.Br(),
+                    dbc.Col(
+                        dbc.Row(
+                            [
+                                dcc.Graph(figure=physical_graph),
+                                dcc.Graph(id="daily_phyical_activity")
+                            ]
+                        ),
+                        className="col-sm-10 offset-md-1 col-md-7"
+                    ),
 
-            dbc.Row(
-                [
-                    dbc.Col(dcc.Graph(id="daily_phy"), className="col-sm-10 col-md-8"),
                     dbc.Col(card_physical, className="col-sm-10 col-md-4")
                 ]
             ),
@@ -533,3 +644,5 @@ def insert_graphs(value):
 
 if __name__ == "__main__":
     app.run_server(debug=True)
+
+

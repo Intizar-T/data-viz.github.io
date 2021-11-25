@@ -30,7 +30,6 @@
 #
 ##### --------------------------------------------------------------------- #####
 
-from numpy.lib.utils import deprecate_with_doc
 import pandas as pd
 import numpy as np
 import zipfile, os, re
@@ -157,6 +156,7 @@ class preprocess():
     def filter_outlier(self, df, col_names, range, cleaned, SD=True):
         # Change timestamp to ms and use it as index
         df['timestamp'] = pd.to_datetime(df['timestamp'], unit='ms')
+        df['timestamp'] = df['timestamp'].dt.floor('S')
         df.set_index('timestamp', drop=True, inplace=True)
 
         if cleaned:
@@ -217,6 +217,11 @@ class preprocess():
         temp_df = df.groupby('label').count().sort_index()
         return temp_df
     
+    ## ------ This function filters the physical activity of the user ------ ##
+    def filter_physical_activity(self, df):
+        df = df[df['confidence'] > 0.5]
+        df = df[df['type'].isin(['ON_FOOT', 'ON_BICYCLE', 'TILTING'])]
+        return df
 
     ## ------ cleanse the data and merge dataframes of each attribute ------ ##
     def clean_merge_data(self, df_list, attr_list, cleaned):
@@ -242,8 +247,8 @@ class preprocess():
             return [pd.DataFrame() for x in range(3)]
 
         if preprocessed == True:
-            aggregate_skin_gsr_hrv = pd.read_csv(os.path.join(self.project_path, 'PreprocessedData', 'skin gsr hrv', "Preprocessed" + user_UID))
-            physical_activity = pd.read_csv(os.path.join(self.project_path, 'PreprocessedData', 'physical activity', "Preprocessed" + user_UID))
+            aggregate_skin_gsr_hrv = pd.read_csv(os.path.join(self.project_path, 'PreprocessedData', 'skin gsr hrv', "Preprocessed" + user_UID + ".csv"))
+            physical_activity = pd.read_csv(os.path.join(self.project_path, 'PreprocessedData', 'physical activity', "Preprocessed" + user_UID + "PP.csv"))
 
         else:  
             dataframe_list, attribute_list = self.extract_user_data(user_UID)
@@ -251,15 +256,13 @@ class preprocess():
             
             physical_activity = dict_attr_df['PhysicalActivityEventEntity']
             
-            aggregate_skin_gsr = pd.concat([dict_attr_df['SkinTemperature'], dict_attr_df['Gsr']], axis=1, sort=False)
-            aggregate_skin_gsr = self.remove_nan(aggregate_skin_gsr)
-            aggregate_skin_gsr['Gsr_calculated'] = (-1) * 38.3279 * aggregate_skin_gsr['Temperature'] + 2769.4713
-            aggregate_skin_gsr['Gsr_difference'] = aggregate_skin_gsr['Gsr_calculated'] - aggregate_skin_gsr['Resistance']
-
-            aggregate_skin_gsr_hrv = pd.concat([aggregate_skin_gsr, dict_attr_df['RRInterval']], axis=1, sort=False)
+            aggregate_skin_gsr_hrv = pd.concat([dict_attr_df['SkinTemperature'], dict_attr_df['Gsr'], dict_attr_df['RRInterval']], axis=1, sort=False)
             aggregate_skin_gsr_hrv = self.remove_nan(aggregate_skin_gsr_hrv)
-        
+
+        aggregate_skin_gsr_hrv['Gsr_calculated'] = (-1) * 38.3279 * aggregate_skin_gsr_hrv['Temperature'] + 2769.4713
+        aggregate_skin_gsr_hrv['Gsr_difference'] = aggregate_skin_gsr_hrv['Gsr_calculated'] - aggregate_skin_gsr_hrv['Resistance']
         aggregate_skin_gsr_hrv['label'] = self.label_range(aggregate_skin_gsr_hrv, 'Gsr_difference')
         percent_poor_df = self.percentage_poor(aggregate_skin_gsr_hrv)
+        physical_activity = self.filter_physical_activity(physical_activity)
         
         return aggregate_skin_gsr_hrv, physical_activity, percent_poor_df

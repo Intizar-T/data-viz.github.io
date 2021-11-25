@@ -244,12 +244,15 @@ def gsr_hrv_time(df1, df2):
                 html.P("Who knew how important the interval between each of your heartbeats are?", className="card-subtitle lead fw-normal"),
                 html.Br(),
                 html.P(
-                    "Some quick example text to build on the card title and make "
-                    "up the bulk of the card's content.",
-                    className="card-text",
+                    "Heart rate variability (HRV) means the variation in time between consecutive heartbeats. It is universally accepted as a non-invasive marker of autonomic nervous system (ANS) activity.",
+                    className="card-text"
+                ),
+                html.P(
+                    "Heart rate variability increases during relaxing and recovering activities and decreases during stress.",
+                    className="card-text"
                 ),
                 html.Br(),           
-                dbc.CardLink("Read More", href="#", style={"textDecoration": "none", "color": "inherit"}),
+                dbc.CardLink("Read More", href="https://www.firstbeat.com/en/science-and-physiology/heart-rate-variability/", style={"textDecoration": "none", "color": "inherit"}),
             ]
         ),
         style={"width": "18rem"},
